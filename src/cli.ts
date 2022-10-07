@@ -8,9 +8,12 @@ type Argv = {
   src: string,
   keyMaxLength: number,
   ignoreFilesRegex: string;
+  projectName: string
 }
 
 export const run = (argv: Argv) => {
+  const projectName = argv.projectName || process.argv.slice(3);
+  console.log('argv', argv);
   argv = yargs(argv || process.argv.slice(2))
     .usage(
       'Extract all string inside JSXElement'
@@ -34,5 +37,5 @@ export const run = (argv: Argv) => {
   
   const jsFiles = filterFiles(shell.find)(argv.src, argv.ignoreFilesRegex);
 
-  generateResources(jsFiles, argv.keyMaxLength);
+  generateResources(jsFiles, argv.keyMaxLength, projectName);
 };

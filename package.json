@@ -60,7 +60,7 @@
     "build": "rm -rf lib/* && babel src --extensions \".es6,.js,.es,.jsx,.mjs,.ts,.tsx\" --ignore __test__,__testfixtures__,*.spec.ts --out-dir lib",
     "fixtures": "yarn start --src=fixtures",
     "prepublish": "npm run build",
-    "start": "yarn b src/index.ts",
+    "start": "yarn b src/index.ts 'home'",
     "test": "jest",
     "watch": "babel --extensions \".es6,.js,.es,.jsx,.mjs,.ts,.tsx\" -w -d ./lib ./src"
   },

@@ -6,14 +6,16 @@ import BabelPluginI18n from './BabelPluginI18n';
 
 import babelConfig from '../babel.config.js';
 
-export const resource = (i18nResource: {[key: string]: string}) => {
+export const resource = (i18nResource: {[key: string]: string}, projectName) => {
   const formatted = Object.keys(i18nResource)
-    .map(key => `   '${key}': \`${i18nResource[key]}\``)
+    .map(key => ` '${key}': \'${i18nResource[key]}\'`)
     .join(',\n');
 
   return `export default {
-  translation: {
-${formatted}
+  'translation': {
+    '${projectName}': {
+        ${formatted}
+    }
   }
 }
 `
@@ -27,13 +29,13 @@ const prettierDefaultConfig: Options = {
   parser: 'babel',
 };
 
-export const getResourceSource = (i18nResource: {[key: string]: string}) => {
-  const source = resource(i18nResource);
+export const getResourceSource = (i18nResource: {[key: string]: string}, projectName: string) => {
+  const source = resource(i18nResource, projectName);
 
   return prettier.format(source, prettierDefaultConfig);
 };
 
-export const generateResources = (files: string[], keyMaxLength: number = 40) => {
+export const generateResources = (files: string[], keyMaxLength: number = 40, projectName: string) => {
   BabelPluginI18n.setMaxKeyLength(keyMaxLength);
 
   let phrases = [];
@@ -62,7 +64,7 @@ export const generateResources = (files: string[], keyMaxLength: number = 40) =>
 
   const i18nMap = BabelPluginI18n.getI18Map();
 
-  fs.writeFileSync('resource.tsx', resource(i18nMap));
+  fs.writeFileSync('resource.tsx', resource(i18nMap, projectName));
 
   // tslint:disable-next-line
   console.log('generate resource file: resource.tsx');
