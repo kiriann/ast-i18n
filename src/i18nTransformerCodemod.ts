@@ -74,6 +74,7 @@ function transform(file: FileInfo, api: API, options: Options) {
   hasI18nUsage = translateJsxContent(j, root, options) || hasI18nUsage;
   hasI18nUsage = translateJsxProps(j, root, options) || hasI18nUsage;
   hasI18nUsage = translateFunctionArguments(j, root, options) || hasI18nUsage;
+  hasI18nUsage = translatePlurals(j, root, options) || hasI18nUsage;
 
   if (hasI18nUsage) {
     // export default withTranslation()(Component)
@@ -186,19 +187,60 @@ function addUseHookToFunctionBody(j: JSCodeshift, functions: Collection<any>) {
   return hookFound;
 }
 
+function translatePlurals(j: JSCodeshift, root: Collection<any>, options: Options) {
+  let hasI18nUsage = false;
+  root
+    .find(j.CallExpression)
+    .forEach((path: NodePath<CallExpression, CallExpression>) => {
+      if (path.value.callee.name === 'pluralise') {
+        console.log('run plural code 1: ', path.node.arguments?.[1]?.value);
+
+        if (hasStringLiteralArguments(path)) {
+          path.node.arguments = path.node.arguments.map(arg => {
+            if (arg.type === 'StringLiteral' && arg.value) {
+              const key = `${prefixProjectName(options)}${getStableKey(`${arg.value}_one`)}`;
+              hasI18nUsage = true;
+
+              return tCallExpression(j, key)
+            }
+
+            if (arg.type === 'ObjectExpression') {
+              arg.properties = arg.properties.map(prop => {
+                if (prop.value && prop.value.type === 'StringLiteral') {
+
+                  const key = `${prefixProjectName(options)}${getStableKey(`${prop.value.value}_one`)}`;
+
+                  prop.value = tCallExpression(j, key);
+                  hasI18nUsage = true;
+                }
+                return prop;
+              });
+            }
+            return arg;
+          })
+        }
+
+
+      }
+
+    })
+
+
+  return hasI18nUsage;
+}
+
 // Yup.string().required('this field is required')
 // showSnackbar({ message: 'ok' })
 function translateFunctionArguments(j: JSCodeshift, root: Collection<any>, options: Options) {
   let hasI18nUsage = false;
   root
     .find(j.CallExpression)
-    .filter((path: NodePath<CallExpression, CallExpression>) => !['classNames'].includes(path.value.callee.name))
+    .filter((path: NodePath<CallExpression, CallExpression>) => !['classNames', 'pluralise'].includes(path.value.callee.name))
     .filter((path: NodePath<CallExpression>) => hasStringLiteralArguments(path))
     .forEach((path: NodePath<CallExpression, CallExpression>) => {
       if (hasStringLiteralArguments(path)) {
         path.node.arguments = path.node.arguments.map(arg => {
           if (arg.type === 'StringLiteral' && arg.value) {
-            // const key = getStableKey(arg.value);
             const key = `${prefixProjectName(options)}${getStableKey(arg.value)}`;
             hasI18nUsage = true;
 
@@ -209,7 +251,6 @@ function translateFunctionArguments(j: JSCodeshift, root: Collection<any>, optio
             arg.properties = arg.properties.map(prop => {
               if (prop.value && prop.value.type === 'StringLiteral') {
 
-                // const key = getStableKey(prop.value.value);
                 const key = `${prefixProjectName(options)}${getStableKey(prop.value.value)}`;
 
                 prop.value = tCallExpression(j, key);
@@ -282,7 +323,6 @@ function translateJsxContent(j: JSCodeshift, root: Collection<any>, options: Opt
     .filter((path: NodePath<JSXText>) => path.node.value && path.node.value.trim())
     .replaceWith((path: NodePath<JSXText>) => {
       hasI18nUsage = true;
-      // const key = getStableKey(path.node.value);
       const key = `${prefixProjectName(options)}${getStableKey(path.node.value)}`;
 
       return j.jsxExpressionContainer(j.callExpression(j.identifier('t'), [j.literal(key)]))
@@ -302,7 +342,6 @@ function translateJsxProps(j: JSCodeshift, root: Collection<any>, options: Optio
       if (!path.node.value || !path.node.value.value) {
         return;
       }
-      // const key = getStableKey(path.node.value.value);
       const key = `${prefixProjectName(options)}${getStableKey(path.node.value.value)}`;
       hasI18nUsage = true;
 
@@ -318,7 +357,6 @@ function translateJsxProps(j: JSCodeshift, root: Collection<any>, options: Optio
       return path.node.expression && j.StringLiteral.check(path.node.expression)
     })
     .forEach(path => {
-      // const key = getStableKey(path.node.expression.value);
       const key = `${prefixProjectName(options)}${getStableKey(path.node.expression.value)}`;
       hasI18nUsage = true;
 
@@ -335,14 +373,12 @@ function translateJsxProps(j: JSCodeshift, root: Collection<any>, options: Optio
       let expression = path.value.expression;
       if (j.Literal.check(expression.consequent)) {
         hasI18nUsage = true;
-        // const key = getStableKey(expression.consequent.value);
         const key = `${prefixProjectName(options)}.${getStableKey(expression.consequent.value)}`;
 
         expression.consequent = tCallExpression(j, key);
       }
       if (j.Literal.check(expression.alternate)) {
         hasI18nUsage = true;
-        // const key = getStableKey(expression.alternate.value);
         const key = `${prefixProjectName(options)}${getStableKey(expression.alternate.value)}`;
 
         expression.alternate = tCallExpression(j, key);
@@ -355,7 +391,6 @@ function translateJsxProps(j: JSCodeshift, root: Collection<any>, options: Optio
 
 function buildTranslationWithArgumentsCall(j: JSCodeshift, translateArgs: any, text: string, options: Options) {
     const translationCallArguments = [
-      // j.literal(getStableKey(text)),
       j.literal(`${prefixProjectName(options)}${getStableKey(text)}`),
     ] as any;
     if (translateArgs.length > 0) {

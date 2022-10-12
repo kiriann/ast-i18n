@@ -13,21 +13,39 @@ let keyMaxLength = 40;
 let phrases: string[] = [];
 let i18nMap = {};
 
-const addPhrase = (displayText: string, keyText?: string) => {
+const addPhrase = (displayText: string, keyText?: string, isPlural?: boolean) => {
   const key = getStableKey(keyText ? keyText: displayText, keyMaxLength);
   const value = getStableValue(displayText);
-
   if (!key || !value) {
     return null;
   }
 
-  i18nMap[key] = value;
-  phrases = [
-    ...phrases,
-    value,
-  ];
+  if (isPlural) {
+    const keySingle = `${key}_one`;
+    const keyMultiple =`${key}_other`;
+    const valueSingle = getStableValue(displayText);
+    const valueMultiple = getStableValue(displayText);
 
-  return { key, value };
+    i18nMap[keySingle] = valueSingle;
+    i18nMap[keyMultiple] = `${valueMultiple}s`;
+
+    phrases = [
+      ...phrases,
+      valueSingle,
+      valueMultiple,
+    ];
+
+  } else {
+    i18nMap[key] = value;
+    phrases = [
+      ...phrases,
+      value,
+    ];
+
+    return { key, value };
+  }
+
+
 };
 
 function BabelPluginI18n(): PluginObj {
@@ -65,10 +83,15 @@ function BabelPluginI18n(): PluginObj {
         }
       },
       CallExpression(path) {
+
         if (hasStringLiteralArguments(path)) {
           for (const arg of path.node.arguments) {
             if (arg.type === 'StringLiteral') {
-              addPhrase(arg.value)
+
+              const isPlural = path.node.callee.name === 'pluralise';
+
+              addPhrase(arg.value, arg.value, isPlural)
+
             }
 
             if (arg.type === 'ObjectExpression') {

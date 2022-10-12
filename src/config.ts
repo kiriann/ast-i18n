@@ -127,7 +127,7 @@ const defaultConfig: ASTConfig = {
     'mapValues',
     'truncate',
     'differenceBy',
-    'pluralise', // todo: check how to approach this, convert to i18n plural. exclude for now
+    // 'pluralise', // todo: check how to approach this, convert to i18n plural. exclude for now
     'fetchUserProfiles',
     'getSearchKey',
     'dateFormat',
