@@ -19,14 +19,14 @@ const tCallExpression = (j: JSCodeshift, key: string) => {
 
 const getImportStatement = (useHoc: boolean = true, useHooks: boolean = false) => {
   if (useHoc && !useHooks) {
-    return `import { withTranslation } from '@benefex/react/app/i18n';`;
+    return `import { translationHoc } from '@benefex/react/app/i18n';`;
   }
 
   if (useHooks && !useHoc) {
     return `import { translationHook } from '@benefex/react/app/i18n';`;
   }
 
-  return `import { translationHook, withTranslation } from '@benefex/react/app/i18n';`;
+  return `import { translationHook, translationHoc } from '@benefex/react/app/i18n';`;
 };
 
 const addI18nImport = (j: JSCodeshift, root: Collection<any>, {useHooks, useHoc}: any) => {
@@ -150,7 +150,7 @@ function createUseTranslationCall(j: JSCodeshift) {
   return j.variableDeclaration('const',
     [j.variableDeclarator(
       j.identifier('{ t }'),
-      j.callExpression(j.identifier('useTranslation'), [])
+      j.callExpression(j.identifier('translationHook'), [])
     )]
   );
 }
@@ -409,7 +409,7 @@ function buildTranslationWithArgumentsCall(j: JSCodeshift, translateArgs: any, t
 function withTranslationHoc(j: JSCodeshift, identifier: any) {
   return j.callExpression(
     j.callExpression(
-      j.identifier('withTranslation'),
+      j.identifier('translationHoc'),
       [],
     ),
     [

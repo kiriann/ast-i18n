@@ -117,3 +117,6 @@ module.exports = {
   ],
 };
 ```
+
+yarn start --src=../REPO_NAME/src --projectName=REPO_NAME
+jscodeshift -t src/i18nTransformerCodemod.ts ../REPO_NAME/src --projectName=REPO_NAMEgithub
